@@ -1,4 +1,4 @@
-name: test
+name: test and sonarcloud
 
 on:
   push:
@@ -71,3 +71,45 @@ jobs:
         with:
           name: code-coverage
           path: coverage.xml
+
+  sonar:
+    name: Sonar Scan
+    runs-on: ubuntu-latest
+    needs:
+      - test
+
+    steps:
+      - name: checkout
+        uses: actions/checkout@v2
+        with:
+          fetch-depth: 0 # Shallow clones should be disabled for a better relevancy of analysis
+
+      - name: download flake8 report
+        uses: actions/download-artifact@v1
+        with:
+          name: code-flake8
+
+      - shell: bash
+        run: |
+          mv code-flake8/flake8.txt .
+      - name: xunit report xml
+        uses: actions/download-artifact@v1
+        with:
+          name: xunit-report
+
+      - shell: bash
+        run: |
+          mv xunit-report/xunit-result.xml .
+      - name: coverage report xml
+        uses: actions/download-artifact@v1
+        with:
+          name: code-coverage
+
+      - shell: bash
+        run: |
+          mv code-coverage/coverage.xml .
+      - name: SonarCloud Scan
+        uses: SonarSource/sonarcloud-github-action@master
+        env:
+          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+          SONAR_TOKEN: ${{ secrets.SONAR_TOKEN }}
