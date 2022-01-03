@@ -1,0 +1,73 @@
+name: test
+
+on:
+  push:
+    branches:
+      - main
+  pull_request:
+    types: [opened, synchronize]
+
+jobs:
+  test:
+    name: test
+    runs-on: ubuntu-latest
+    permissions:
+      id-token: write
+      contents: read
+
+    strategy:
+      max-parallel: 1
+      matrix:
+        python-version: [3.9]
+
+    steps:
+      - uses: actions/checkout@v2
+        with:
+          fetch-depth: 0
+
+      - name: Set up Python ${{ matrix.python-version }}
+        uses: actions/setup-python@v1
+        with:
+          python-version: ${{ matrix.python-version }}
+
+      - name: Assign veriables to Env variable
+        run: |
+          cat ci_environments.txt >> $GITHUB_ENV
+
+      - name: Install Requirements
+        run: |
+          python -m pip install --upgrade pip
+          pip install pylint pytest pytest-cov flake8
+          pip install -r requirements.txt
+
+      - name: Lint with flake8
+        run: |
+          flake8 --exit-zero --ignore=${{ env.flake8_ignore }} --max-complexity=${{ env.max_complexity }} --max-line-length=${{ env.max_line_length }} --exclude=.svn,CVS,.bzr,.hg,.git,__pycache__,.tox,.eggs,*.egg,nowcast --output-file=flake8.txt .
+
+      - name: flake8 report
+        uses: actions/upload-artifact@v2
+        with:
+          name: code-flake8
+          path: flake8.txt
+
+      - name: run pytest
+        run: |
+          make ci_test
+
+      - name: coverage report html
+        uses: actions/upload-artifact@v2
+        with:
+          name: code-coverage-html
+          path: htmlcov
+
+      - name: xunit report xml
+        uses: actions/upload-artifact@v2
+        with:
+          name: xunit-report
+          path: xunit-result.xml
+
+      - name: coverage report xml
+        uses: actions/upload-artifact@v2
+        with:
+          name: code-coverage
+          path: coverage.xml
