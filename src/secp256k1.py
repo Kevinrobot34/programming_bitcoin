@@ -24,7 +24,7 @@ class PrivateKey:
     def hex(self) -> str:
         return f'{self.secret:x}'.zfill(64)
 
-    def sign(self, z: int):
+    def sign(self, z: int) -> Signature:
         # prepare random number k
         # k = self.random_k()
         k = self.deterministic_k(z)

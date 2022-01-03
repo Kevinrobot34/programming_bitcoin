@@ -1,6 +1,5 @@
 import pytest
 import src.ecc as target
-from attr import define
 
 
 ################################################################################

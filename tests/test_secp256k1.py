@@ -1,4 +1,3 @@
-import pytest
 import src.secp256k1 as target
 
 

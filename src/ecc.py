@@ -1,7 +1,5 @@
 from __future__ import annotations
 
-from typing import Type
-
 
 class FieldElement(object):
     def __init__(self, num: int, prime: int) -> None:
