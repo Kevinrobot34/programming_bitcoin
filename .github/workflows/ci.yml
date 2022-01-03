@@ -52,7 +52,7 @@ jobs:
 
       - name: run pytest
         run: |
-          make ci_test
+          pytest -v --cov --cov-report=xml --cov-report=html --junitxml=xunit-result.xml
 
       - name: coverage report html
         uses: actions/upload-artifact@v2
