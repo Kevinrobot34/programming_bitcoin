@@ -1,8 +1,10 @@
+import pytest
 import src.secp256k1 as target
 
 
 def test_constants():
     assert (target.N * target.G).x is None
+    assert target.P % 4 == 3
 
 
 def test_pubpoint():
@@ -42,3 +44,30 @@ def test_verify():
     ]
     for z, r, s in zrs:
         assert point.verify(z, target.Signature(r, s))
+
+
+@pytest.mark.parametrize('p, compressed, expected_str', [
+    ((999**3) * target.G, False,
+     '049d5ca49670cbe4c3bfa84c96a8c87df086c6ea6a24ba6b809c9de234496808d56fa15cc7f3d38cda98dee2419f415b7513dde1301f8643cd9245aea7f3f911f9'
+     ),
+    ((999**3) * target.G, True,
+     '039d5ca49670cbe4c3bfa84c96a8c87df086c6ea6a24ba6b809c9de234496808d5'),
+    ((2019**5) * target.G, True,
+     '02933ec2d2b111b92737ec12f1c5d20f3233a0ad21cd8b36d0bca7a0cfa5cb8701'),
+])
+def test_sec(p, compressed, expected_str):
+    expected = bytes.fromhex(expected_str)
+    assert p.sec(compressed) == expected
+
+
+@pytest.mark.parametrize('sec_bin_str, expected', [
+    ('049d5ca49670cbe4c3bfa84c96a8c87df086c6ea6a24ba6b809c9de234496808d56fa15cc7f3d38cda98dee2419f415b7513dde1301f8643cd9245aea7f3f911f9',
+     (999**3) * target.G),
+    ('039d5ca49670cbe4c3bfa84c96a8c87df086c6ea6a24ba6b809c9de234496808d5',
+     (999**3) * target.G),
+    ('02933ec2d2b111b92737ec12f1c5d20f3233a0ad21cd8b36d0bca7a0cfa5cb8701',
+     (2019**5) * target.G),
+])
+def test_parse(sec_bin_str, expected):
+    sec_bin = bytes.fromhex(sec_bin_str)
+    assert target.S256Point.parse(sec_bin) == expected

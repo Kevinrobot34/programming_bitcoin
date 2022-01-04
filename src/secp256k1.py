@@ -74,6 +74,9 @@ class S256Field(FieldElement):
     def __str__(self) -> str:
         return f'{self.num:x}'.zfill(64)  # 32 bytes number as hex
 
+    def sqrt(self) -> S256Field:
+        return self**((P + 1) // 4)
+
 
 class S256Point(Point):
     '''
@@ -106,13 +109,35 @@ class S256Point(Point):
     def sec(self, compressed: bool = True) -> bytes:
         # return SEC format bytes
         if compressed:
+            # compressed format : return 33 bytes data
             if self.y.num % 2 == 0:
                 return b'\x02' + self.x.num.to_bytes(32, 'big')
             else:
                 return b'\x03' + self.x.num.to_bytes(32, 'big')
         else:
+            # uncompressed format : return 65 bytes data
             return b'\x04' + self.x.num.to_bytes(32, 'big') \
-                + +self.y.num.to_bytes(32, 'big')
+                + self.y.num.to_bytes(32, 'big')
+
+    @classmethod
+    def parse(cls, sec_bin: bytes) -> S256Point:
+        if sec_bin[0] == 4:
+            # uncompressed SEC format
+            return S256Point(x=int.from_bytes(sec_bin[1:33], 'big'),
+                             y=int.from_bytes(sec_bin[33:65], 'big'))
+
+        is_even = sec_bin[0] == 2
+        x = S256Field(int.from_bytes(sec_bin[1:33], 'big'))
+        y2 = x**3 + S256Field(A) * x + S256Field(B)
+        y = y2.sqrt()
+        if y.num % 2 == 0:
+            y_even = y
+            y_odd = S256Field(P - y.num)
+        else:
+            y_even = S256Field(P - y.num)
+            y_odd = y
+
+        return S256Point(x, y_even if is_even else y_odd)
 
 
 # define constant
