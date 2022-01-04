@@ -71,3 +71,16 @@ def test_sec(p, compressed, expected_str):
 def test_parse(sec_bin_str, expected):
     sec_bin = bytes.fromhex(sec_bin_str)
     assert target.S256Point.parse(sec_bin) == expected
+
+
+@pytest.mark.parametrize('r, s, expected', [
+    (1, 2, bytes.fromhex('30' + '06' + '020101' + '020102')),
+    (0x37206a0610995c58074999cb9767b87af4c4978db68c06e8e6e81d282047a7c6,
+     0x8ca63759c1157ebeaec0d03cecca119fc9a75bf8e6d0fa65c841c8e2738cdaec,
+     bytes.fromhex(
+         '3045022037206a0610995c58074999cb9767b87af4c4978db68c06e8e6e81d282047a7c60221008ca63759c1157ebeaec0d03cecca119fc9a75bf8e6d0fa65c841c8e2738cdaec'
+     ))
+])
+def test_sig_der(r, s, expected):
+    sig = target.Signature(r, s)
+    assert sig.der() == expected
