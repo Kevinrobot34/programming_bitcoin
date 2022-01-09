@@ -5,6 +5,7 @@ import hmac
 from random import randint
 
 from src.ecc import FieldElement, Point
+from src.helper import encode_base58_checksum, hash160
 
 
 class Signature:
@@ -14,6 +15,22 @@ class Signature:
 
     def __repr__(self) -> str:
         return f'Signature({self.r}, {self.s})'
+
+    def der(self) -> bytes:
+        rbin = self.r.to_bytes(32, 'big')
+        rbin = rbin.lstrip(b'\x00')
+        if rbin[0] & 0x80:
+            rbin = b'\x00' + rbin
+
+        sbin = self.s.to_bytes(32, 'big')
+        sbin = sbin.lstrip(b'\x00')
+        if sbin[0] & 0x80:
+            sbin = b'\x00' + sbin
+
+        result = bytes([2, len(rbin)]) + rbin
+        result += bytes([2, len(sbin)]) + sbin
+        result = bytes([0x30, len(result)]) + result
+        return result
 
 
 class PrivateKey:
@@ -62,6 +79,12 @@ class PrivateKey:
             k = hmac.new(k, v + b'\x00', s256).digest()
             v = hmac.new(k, v, s256).digest()
 
+    def wif(self, compressed: bool = True, testnet: bool = False) -> str:
+        secret_bytes = self.secret.to_bytes(32, 'big')
+        prefix = b'\xef' if testnet else b'\x80'
+        suffix = b'\x01' if compressed else b''
+        return encode_base58_checksum(prefix + secret_bytes + suffix)
+
 
 class S256Field(FieldElement):
     '''
@@ -73,6 +96,9 @@ class S256Field(FieldElement):
 
     def __str__(self) -> str:
         return f'{self.num:x}'.zfill(64)  # 32 bytes number as hex
+
+    def sqrt(self) -> S256Field:
+        return self**((P + 1) // 4)
 
 
 class S256Point(Point):
@@ -104,15 +130,53 @@ class S256Point(Point):
         return total.x.num == sig.r
 
     def sec(self, compressed: bool = True) -> bytes:
-        # return SEC format bytes
+        '''
+        return SEC format bytes
+        '''
         if compressed:
+            # compressed format : return 33 bytes data
             if self.y.num % 2 == 0:
                 return b'\x02' + self.x.num.to_bytes(32, 'big')
             else:
                 return b'\x03' + self.x.num.to_bytes(32, 'big')
         else:
+            # uncompressed format : return 65 bytes data
             return b'\x04' + self.x.num.to_bytes(32, 'big') \
-                + +self.y.num.to_bytes(32, 'big')
+                + self.y.num.to_bytes(32, 'big')
+
+    @classmethod
+    def parse(cls, sec_bin: bytes) -> S256Point:
+        '''
+        return S256Point object from SEC format bytes
+        '''
+        if sec_bin[0] == 4:
+            # uncompressed SEC format
+            return S256Point(x=int.from_bytes(sec_bin[1:33], 'big'),
+                             y=int.from_bytes(sec_bin[33:65], 'big'))
+
+        is_even = sec_bin[0] == 2
+        x = S256Field(int.from_bytes(sec_bin[1:33], 'big'))
+        y2 = x**3 + S256Field(A) * x + S256Field(B)
+        y = y2.sqrt()
+        if y.num % 2 == 0:
+            y_even = y
+            y_odd = S256Field(P - y.num)
+        else:
+            y_even = S256Field(P - y.num)
+            y_odd = y
+
+        return S256Point(x, y_even if is_even else y_odd)
+
+    def hash160(self, compressed: bool = True) -> bytes:
+        return hash160(self.sec(compressed))
+
+    def address(self, compressed: bool = True, testnet: bool = False) -> str:
+        '''
+        return address format string
+        '''
+        h160 = self.hash160(compressed)
+        prefix = b'\x6f' if testnet else b'\x00'
+        return encode_base58_checksum(prefix + h160)
 
 
 # define constant
