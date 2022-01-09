@@ -49,3 +49,28 @@ def little_endian_to_int(b: bytes) -> int:
 
 def int_to_little_endian(n: int, length: int) -> bytes:
     return n.to_bytes(length, 'little')
+
+
+def read_varint(s):
+    i = s.read(1)[0]
+    if i == 0xfd:
+        return little_endian_to_int(s.read(2))
+    elif i == 0xfe:
+        return little_endian_to_int(s.read(4))
+    elif i == 0xff:
+        return little_endian_to_int(s.read(8))
+    else:
+        return i
+
+
+def encode_varint(i: int) -> bytes:
+    if i < 0xfd:
+        return bytes([i])
+    elif i < 0x1_0000:
+        return b'\xfd' + int_to_little_endian(i, 2)
+    elif i < 0x1_0000_0000:
+        return b'\xfe' + int_to_little_endian(i, 4)
+    elif i < 0x1_0000_0000_0000_0000:
+        return b'\xff' + int_to_little_endian(i, 8)
+    else:
+        raise ValueError(f'Integer too large: {i}.')
