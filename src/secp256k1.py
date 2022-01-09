@@ -5,6 +5,7 @@ import hmac
 from random import randint
 
 from src.ecc import FieldElement, Point
+from src.helper import encode_base58_checksum, hash160
 
 
 class Signature:
@@ -77,6 +78,12 @@ class PrivateKey:
                 return candidate
             k = hmac.new(k, v + b'\x00', s256).digest()
             v = hmac.new(k, v, s256).digest()
+
+    def wif(self, compressed: bool = True, testnet: bool = False) -> str:
+        secret_bytes = self.secret.to_bytes(32, 'big')
+        prefix = b'\xef' if testnet else b'\x80'
+        suffix = b'\x01' if compressed else b''
+        return encode_base58_checksum(prefix + secret_bytes + suffix)
 
 
 class S256Field(FieldElement):
@@ -154,6 +161,15 @@ class S256Point(Point):
             y_odd = y
 
         return S256Point(x, y_even if is_even else y_odd)
+
+    def hash160(self, compressed: bool = True) -> bytes:
+        return hash160(self.sec(compressed))
+
+    def address(self, compressed: bool = True, testnet: bool = False) -> str:
+        # return address format strings
+        h160 = self.hash160(compressed)
+        prefix = b'\x6f' if testnet else b'\x00'
+        return encode_base58_checksum(prefix + h160)
 
 
 # define constant
