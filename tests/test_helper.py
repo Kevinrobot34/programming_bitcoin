@@ -5,6 +5,8 @@ import src.helper as target
 @pytest.mark.parametrize('b, expected', [
     (b'\x00\x00\x00\x00\x05', '11116'),
     (b'\x05', '6'),
+    (b'\x3a', '21'),
+    (b'\x39', 'z'),
 ])
 def test_encode_base58(b: bytes, expected: str):
     assert target.encode_base58(b) == expected
@@ -13,13 +15,15 @@ def test_encode_base58(b: bytes, expected: str):
 @pytest.mark.parametrize('s, expected', [
     ('11116', b'\x00\x00\x00\x00\x05'),
     ('6', b'\x05'),
+    ('21', b'\x3a'),
+    ('z', b'\x39'),
 ])
 def test_decode_base58(s: str, expected: bytes):
     assert target.decode_base58(s) == expected
 
 
-@pytest.mark.parametrize('b', [(b'\x00\x00\x00\x00\x05'), (b'\x05'), (b'\xff'),
-                               (b'\x00\xff')])
+@pytest.mark.parametrize(
+    'b', [b'\x00\x00\x00\x00\x05', b'\x05', b'\xff', b'\x00\xff'])
 def test_encode_decode_base58(b: bytes):
     assert b == target.decode_base58(target.encode_base58(b))
 

@@ -130,7 +130,9 @@ class S256Point(Point):
         return total.x.num == sig.r
 
     def sec(self, compressed: bool = True) -> bytes:
-        # return SEC format bytes
+        '''
+        return SEC format bytes
+        '''
         if compressed:
             # compressed format : return 33 bytes data
             if self.y.num % 2 == 0:
@@ -144,6 +146,9 @@ class S256Point(Point):
 
     @classmethod
     def parse(cls, sec_bin: bytes) -> S256Point:
+        '''
+        return S256Point object from SEC format bytes
+        '''
         if sec_bin[0] == 4:
             # uncompressed SEC format
             return S256Point(x=int.from_bytes(sec_bin[1:33], 'big'),
@@ -166,7 +171,9 @@ class S256Point(Point):
         return hash160(self.sec(compressed))
 
     def address(self, compressed: bool = True, testnet: bool = False) -> str:
-        # return address format strings
+        '''
+        return address format string
+        '''
         h160 = self.hash160(compressed)
         prefix = b'\x6f' if testnet else b'\x00'
         return encode_base58_checksum(prefix + h160)

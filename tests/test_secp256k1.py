@@ -46,6 +46,13 @@ def test_verify():
         assert point.verify(z, target.Signature(r, s))
 
 
+@pytest.mark.parametrize('n', [1, 2, 4])
+def test_S256Field_sqrt(n):
+    n = target.S256Field(n)
+    sqrt = n.sqrt()
+    assert n == sqrt**2
+
+
 @pytest.mark.parametrize('p, compressed, expected_str', [
     ((999**3) * target.G, False,
      '049d5ca49670cbe4c3bfa84c96a8c87df086c6ea6a24ba6b809c9de234496808d56fa15cc7f3d38cda98dee2419f415b7513dde1301f8643cd9245aea7f3f911f9'
@@ -55,7 +62,7 @@ def test_verify():
     ((2019**5) * target.G, True,
      '02933ec2d2b111b92737ec12f1c5d20f3233a0ad21cd8b36d0bca7a0cfa5cb8701'),
 ])
-def test_sec(p, compressed, expected_str):
+def test_S256Point_sec(p, compressed, expected_str):
     expected = bytes.fromhex(expected_str)
     assert p.sec(compressed) == expected
 
@@ -68,9 +75,21 @@ def test_sec(p, compressed, expected_str):
     ('02933ec2d2b111b92737ec12f1c5d20f3233a0ad21cd8b36d0bca7a0cfa5cb8701',
      (2019**5) * target.G),
 ])
-def test_parse(sec_bin_str, expected):
+def test_S256Point_parse(sec_bin_str, expected):
     sec_bin = bytes.fromhex(sec_bin_str)
     assert target.S256Point.parse(sec_bin) == expected
+
+
+@pytest.mark.parametrize('p, compressed, testnet, expected', [
+    ((888**3) * target.G, True, False, '148dY81A9BmdpMhvYEVznrM45kWN32vSCN'),
+    ((888**3) * target.G, True, True, 'mieaqB68xDCtbUBYFoUNcmZNwk74xcBfTP'),
+    (321 * target.G, False, False, '1S6g2xBJSED7Qr9CYZib5f4PYVhHZiVfj'),
+    (321 * target.G, False, True, 'mfx3y63A7TfTtXKkv7Y6QzsPFY6QCBCXiP'),
+])
+def test_S256Point_address(p: target.S256Point, compressed: bool,
+                           testnet: bool, expected: str):
+    actual = p.address(compressed, testnet)
+    assert actual == expected
 
 
 @pytest.mark.parametrize('r, s, expected', [
@@ -81,6 +100,18 @@ def test_parse(sec_bin_str, expected):
          '3045022037206a0610995c58074999cb9767b87af4c4978db68c06e8e6e81d282047a7c60221008ca63759c1157ebeaec0d03cecca119fc9a75bf8e6d0fa65c841c8e2738cdaec'
      ))
 ])
-def test_sig_der(r, s, expected):
+def test_Signature_der(r, s, expected):
     sig = target.Signature(r, s)
     assert sig.der() == expected
+
+
+@pytest.mark.parametrize('s, compressed, testnet, expected', [
+    (2**256 - 2**199, True, False,
+     'L5oLkpV3aqBJ4BgssVAsax1iRa77G5CVYnv9adQ6Z87te7TyUdSC'),
+    (2**256 - 2**201, False, True,
+     '93XfLeifX7Jx7n7ELGMAf1SUR6f9kgQs8Xke8WStMwUtrDucMzn'),
+])
+def test_PrivateKey_wif(s: int, compressed: bool, testnet: bool,
+                        expected: str):
+    pk = target.PrivateKey(s)
+    assert pk.wif(compressed, testnet) == expected
