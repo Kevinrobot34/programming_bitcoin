@@ -1,4 +1,5 @@
 import hashlib
+from io import BytesIO
 
 BASE58_ALPHABET = '123456789ABCDEFGHJKLMNPQRSTUVWXYZabcdefghijkmnopqrstuvwxyz'
 
@@ -51,7 +52,7 @@ def int_to_little_endian(n: int, length: int) -> bytes:
     return n.to_bytes(length, 'little')
 
 
-def read_varint(s):
+def read_varint(s: BytesIO):
     i = s.read(1)[0]
     if i == 0xfd:
         return little_endian_to_int(s.read(2))

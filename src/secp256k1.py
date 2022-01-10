@@ -2,6 +2,7 @@ from __future__ import annotations
 
 import hashlib
 import hmac
+from io import BytesIO
 from random import randint
 
 from src.ecc import FieldElement, Point
@@ -31,6 +32,30 @@ class Signature:
         result += bytes([2, len(sbin)]) + sbin
         result = bytes([0x30, len(result)]) + result
         return result
+
+    @classmethod
+    def parse(cls, signature_b: bytes) -> Signature:
+        stream = BytesIO(signature_b)
+        compound = stream.read(1)[0]
+        if compound != 0x30:
+            raise SyntaxError('Bad Signature: invalid marker')
+        length = stream.read(1)[0]
+        if 2 + length != len(signature_b):
+            raise SyntaxError('Bad Signature: invalid length')
+        r_marker = stream.read(1)[0]
+        if r_marker != 2:
+            raise SyntaxError('Bad Signature: invalid r-marker')
+        r_length = stream.read(1)[0]
+        r = int.from_bytes(stream.read(r_length), 'big')
+        s_marker = stream.read(1)[0]
+        if s_marker != 2:
+            raise SyntaxError('Bad Signature: invalid s-marker')
+        s_length = stream.read(1)[0]
+        s = int.from_bytes(stream.read(s_length), 'big')
+        if len(signature_b) != 6 + r_length + s_length:
+            error = f'Bad Signature: invalid length (total={len(signature_b)}, r_length={r_length}, s_length={s_length})'
+            raise SyntaxError(error)
+        return cls(r, s)
 
 
 class PrivateKey:

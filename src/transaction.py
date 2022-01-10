@@ -1,5 +1,7 @@
+from __future__ import annotations
+
 from io import BytesIO
-from typing import Dict
+from typing import Optional
 
 import requests
 
@@ -9,11 +11,14 @@ from src.script import Script
 
 
 class Tx:
+    bytes_version = 4
+    bytes_locktime = 4
+
     def __init__(self,
                  version: int,
-                 tx_ins,
-                 tx_outs,
-                 locktime,
+                 tx_ins: list[TxIn],
+                 tx_outs: list[TxOut],
+                 locktime: int,
                  testnet: bool = False):
         self.version = version
         self.tx_ins = tx_ins
@@ -29,7 +34,7 @@ class Tx:
 
     @classmethod
     def parse(cls, stream, testnet: bool = False):
-        version = little_endian_to_int(stream.read(4))
+        version = little_endian_to_int(stream.read(cls.bytes_version))
 
         n_tx_in = read_varint(stream)
         tx_ins = []
@@ -41,11 +46,11 @@ class Tx:
         for _ in range(n_tx_out):
             tx_outs.append(TxOut.parse(stream))
 
-        locktime = little_endian_to_int(stream.read(4))
+        locktime = little_endian_to_int(stream.read(cls.bytes_locktime))
         return cls(version, tx_ins, tx_outs, locktime, testnet=testnet)
 
     def serialize(self) -> bytes:
-        result = int_to_little_endian(self.version, 4)
+        result = int_to_little_endian(self.version, self.bytes_version)
 
         result += encode_varint(len(self.tx_ins))
         for tx_in_i in self.tx_ins:
@@ -55,7 +60,7 @@ class Tx:
         for tx_out_i in self.tx_outs:
             result += tx_out_i.serialize()
 
-        result += int_to_little_endian(self.locktime, 4)
+        result += int_to_little_endian(self.locktime, self.bytes_locktime)
         return result
 
     def fee(self) -> int:
@@ -70,10 +75,10 @@ class Tx:
 
 class TxIn:
     def __init__(self,
-                 prev_tx,
-                 prev_index,
-                 script_sig=None,
-                 sequence=0xff_ff_ff_ff) -> None:
+                 prev_tx: bytes,
+                 prev_index: int,
+                 script_sig: Optional[Script] = None,
+                 sequence: int = 0xff_ff_ff_ff) -> None:
         self.prev_tx = prev_tx
         self.prev_index = prev_index
         if script_sig is None:
@@ -86,7 +91,7 @@ class TxIn:
         return f'{self.prev_tx.hex()}:{self.prev_index}'
 
     @classmethod
-    def parse(cls, stream):
+    def parse(cls, stream: BytesIO) -> TxIn:
         prev_tx = stream.read(32)[::-1]
         prev_index = little_endian_to_int(stream.read(4))
         script_sig = Script.parse(stream)
@@ -109,11 +114,11 @@ class TxIn:
 
     def script_pubkey(self, testnet: bool = False) -> Script:
         tx = self.fetch_tx(testnet=testnet)
-        return tx.tx_outs[self.prev_index].script_pubkey
+        return tx.tx_outs[self.prev_index].script_pub_key
 
 
 class TxOut:
-    def __init__(self, amount: int, script_pub_key) -> None:
+    def __init__(self, amount: int, script_pub_key: Script) -> None:
         self.amount = amount
         self.script_pub_key = script_pub_key
 
@@ -121,7 +126,7 @@ class TxOut:
         return f'{self.amount}:{self.script_pub_key}'
 
     @classmethod
-    def parse(cls, stream):
+    def parse(cls, stream: BytesIO) -> TxOut:
         amount = little_endian_to_int(stream.read(8))
         script_pub_key = Script.parse(stream)
         return cls(amount, script_pub_key)
@@ -133,14 +138,14 @@ class TxOut:
 
 
 class TxFetcher:
-    cache: Dict[str, Tx] = {}
+    cache: dict[str, Tx] = {}
 
     @classmethod
     def get_url(cls, testnet: bool = False) -> str:
         if testnet:
-            return 'http://testnet.programmingbitcoin.com'
+            return 'https://testnet.programmingbitcoin.com'
         else:
-            return 'http://mainnet.programmingbitcoin.com'
+            return 'https://mainnet.programmingbitcoin.com'
 
     @classmethod
     def fetch(cls,
