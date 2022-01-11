@@ -74,3 +74,155 @@ def test_operations1():
     s = stack[:]
     assert target.op_tuck(s)  # 125
     assert s == [6, 5, 4, 3, 1, 2, 1]
+
+
+def test_operations2():
+    stack = [b'\x5a', b'\x5b', b'\x5c', b'\x5d']
+
+    s = stack[:]
+    assert target.op_size(s)  # 130
+    assert s == [b'\x5a', b'\x5b', b'\x5c', b'\x5d', b'\x01']
+
+    s = stack[:]
+    assert target.op_1add(s)  # 139
+    assert s == [b'\x5a', b'\x5b', b'\x5c', b'\x5e']
+
+    s = stack[:]
+    assert target.op_1sub(s)  # 140
+    assert s == [b'\x5a', b'\x5b', b'\x5c', b'\x5c']
+
+    s = stack[:]
+    assert target.op_negate(s)  # 143
+    assert s == [b'\x5a', b'\x5b', b'\x5c', b'\xdd']
+
+    s = stack[:]
+    assert target.op_add(s)  # 147
+    assert s == [b'\x5a', b'\x5b', b'\xb9\x00']
+
+    s = stack[:]
+    assert target.op_sub(s)  # 148
+    assert s == [b'\x5a', b'\x5b', b'\x81']
+
+    s = stack[:]
+    assert target.op_mul(s)  # 149
+    assert s == [b'\x5a', b'\x5b', b'\x6c\x21']
+
+
+@pytest.mark.parametrize('s, expected', [
+    ([b'\x01', b'\x01'], [b'\x01']),
+    ([b'\x01', b''], [b'']),
+    ([b'', b'\x01'], [b'']),
+    ([b'', b''], [b'']),
+])
+def test_op_booland(s: list, expected: list):
+    assert target.op_booland(s)  # 154
+    assert s == expected
+
+
+@pytest.mark.parametrize('s, expected', [
+    ([b'\x01', b'\x01'], [b'\x01']),
+    ([b'\x01', b''], [b'\x01']),
+    ([b'', b'\x01'], [b'\x01']),
+    ([b'', b''], [b'']),
+])
+def test_op_boolor(s: list, expected: list):
+    assert target.op_boolor(s)  # 155
+    assert s == expected
+
+
+@pytest.mark.parametrize('s, expected', [
+    ([b'\x01', b'\x01'], [b'\x01']),
+    ([b'\x01', b''], [b'']),
+    ([b'', b'\x01'], [b'']),
+    ([b'', b''], [b'\x01']),
+])
+def test_op_numequal(s: list, expected: list):
+    assert target.op_numequal(s)  # 156
+    assert s == expected
+
+
+@pytest.mark.parametrize('s, expected', [
+    ([b'\x01', b'\x01'], [b'']),
+    ([b'\x01', b''], [b'\x01']),
+    ([b'', b'\x01'], [b'\x01']),
+    ([b'', b''], [b'']),
+])
+def test_op_numnotequal(s: list, expected: list):
+    assert target.op_numnotequal(s)  # 158
+    assert s == expected
+
+
+@pytest.mark.parametrize('s, expected', [
+    ([b'\x01', b'\x01'], [b'']),
+    ([b'\x01', b''], [b'']),
+    ([b'', b'\x01'], [b'\x01']),
+    ([b'', b''], [b'']),
+])
+def test_op_lessthan(s: list, expected: list):
+    assert target.op_lessthan(s)  # 159
+    assert s == expected
+
+
+@pytest.mark.parametrize('s, expected', [
+    ([b'\x01', b'\x01'], [b'']),
+    ([b'\x01', b''], [b'\x01']),
+    ([b'', b'\x01'], [b'']),
+    ([b'', b''], [b'']),
+])
+def test_op_greaterthan(s: list, expected: list):
+    assert target.op_greaterthan(s)  # 160
+    assert s == expected
+
+
+@pytest.mark.parametrize('s, expected', [
+    ([b'\x01', b'\x01'], [b'\x01']),
+    ([b'\x01', b''], [b'']),
+    ([b'', b'\x01'], [b'\x01']),
+    ([b'', b''], [b'\x01']),
+])
+def test_op_lessthanorequal(s: list, expected: list):
+    assert target.op_lessthanorequal(s)  # 161
+    assert s == expected
+
+
+@pytest.mark.parametrize('s, expected', [
+    ([b'\x01', b'\x01'], [b'\x01']),
+    ([b'\x01', b''], [b'\x01']),
+    ([b'', b'\x01'], [b'']),
+    ([b'', b''], [b'\x01']),
+])
+def test_op_greaterthanorequal(s: list, expected: list):
+    assert target.op_greaterthanorequal(s)  # 162
+    assert s == expected
+
+
+@pytest.mark.parametrize('s, expected', [
+    ([b'\x01', b'\x01'], [b'\x01']),
+    ([b'\x01', b''], [b'']),
+    ([b'', b'\x01'], [b'']),
+    ([b'', b''], [b'']),
+])
+def test_op_min(s: list, expected: list):
+    assert target.op_min(s)  # 163
+    assert s == expected
+
+
+@pytest.mark.parametrize('s, expected', [
+    ([b'\x01', b'\x01'], [b'\x01']),
+    ([b'\x01', b''], [b'\x01']),
+    ([b'', b'\x01'], [b'\x01']),
+    ([b'', b''], [b'']),
+])
+def test_op_max(s: list, expected: list):
+    assert target.op_max(s)  # 164
+    assert s == expected
+
+
+@pytest.mark.parametrize('s, expected', [
+    ([b'\x01', b'\x03', b'\x07'], [b'']),
+    ([b'\x04', b'\x03', b'\x07'], [b'\x01']),
+    ([b'\x09', b'\x03', b'\x07'], [b'']),
+])
+def test_op_within(s: list, expected: list):
+    assert target.op_within(s)  # 165
+    assert s == expected
