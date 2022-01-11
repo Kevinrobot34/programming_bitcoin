@@ -9,7 +9,7 @@ OP_IF = 99
 OP_NOTIF = 100
 OP_ELSE = 103
 OP_ENDIF = 104
-OP_TOALTSTACK=107
+OP_TOALTSTACK = 107
 OP_FROMALTSTACK = 108
 OP_CHECKSIG = 172
 OP_CHECKSIGVERIFY = 173
@@ -724,7 +724,7 @@ def op_checksig(stack: list, z) -> bool:
     try:
         pubkey = S256Point.parse(sec_pubkey)
         sig = Signature.parse(der_sig)
-    except (ValueError, SyntaxError) as e:
+    except (ValueError, SyntaxError):
         return False
     if pubkey.verify(z, sig):
         stack.append(encode_num(1))
@@ -873,7 +873,7 @@ OP_CODE_FUNCTIONS = {
     185: op_nop,
 }
 
-OP_CODE_NAMES = {
+OP_CODE_NAMES: dict[int, str] = {
     0: 'OP_0',
     OP_PUSHDATA1: 'OP_PUSHDATA1',
     OP_PUSHDATA2: 'OP_PUSHDATA2',

@@ -21,6 +21,19 @@ class Script:
     def __add__(self, other: Script) -> Script:
         return self.__class__(self.cmds + other.cmds)
 
+    def __repr__(self) -> str:
+        result: list[str] = []
+        for cmd_i in self.cmds:
+            if isinstance(cmd_i, int):
+                if cmd_i in OP_CODE_NAMES:
+                    name = OP_CODE_NAMES[cmd_i]
+                else:
+                    name = f'OP_[{cmd_i}]'
+                result.append(name)
+            else:
+                result.append(cmd_i.hex())
+        return ' '.join(result)
+
     @classmethod
     def parse(cls, stream: BytesIO):
         length = read_varint(stream)

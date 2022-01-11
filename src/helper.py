@@ -52,7 +52,7 @@ def int_to_little_endian(n: int, length: int) -> bytes:
     return n.to_bytes(length, 'little')
 
 
-def read_varint(s: BytesIO):
+def read_varint(s: BytesIO) -> int:
     i = s.read(1)[0]
     if i == 0xfd:
         return little_endian_to_int(s.read(2))
