@@ -73,3 +73,12 @@ def test_read_varint(b: bytes, expected: int):
 ])
 def test_encode_varint(i: int, expected: bytes):
     assert target.encode_varint(i) == expected
+
+
+@pytest.mark.parametrize('i', [
+    0x1_0000_0000_0000_0000,
+    0x1_0000_0000_0000_0000_0000,
+])
+def test_encode_varint_raise(i: int):
+    with pytest.raises(ValueError, match='Integer too large:'):
+        target.encode_varint(i)
