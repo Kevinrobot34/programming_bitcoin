@@ -54,7 +54,7 @@ class Script:
             elif current_byte == OP_PUSHDATA2:
                 data_length = little_endian_to_int(stream.read(2))
                 cmds.append(stream.read(data_length))
-                count += 1 + data_length
+                count += 2 + data_length
             else:
                 op_code = current_byte
                 cmds.append(op_code)
@@ -70,17 +70,21 @@ class Script:
             else:
                 length = len(cmd_i)
                 if length <= 75:
+                    # element ~ 75 bytes -> <length><element>
                     result += int_to_little_endian(length, 1)
                 elif length <= 255:
+                    # element 76 ~ 255 bytes -> <OP_PUSHDATA1><length1><element>
                     result += int_to_little_endian(OP_PUSHDATA1, 1)
                     result += int_to_little_endian(length, 1)
                 elif length <= 520:
+                    # element 256 ~ 520 bytes -> <OP_PUSHDATA2><length2><element>
                     result += int_to_little_endian(OP_PUSHDATA2, 1)
-                    result += int_to_little_endian(length, 1)
+                    result += int_to_little_endian(length, 2)
                 else:
                     raise ValueError('too long an cmd')
 
                 result += cmd_i
+            print(cmd_i, result)
         return result
 
     def serialize(self) -> bytes:

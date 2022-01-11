@@ -8,10 +8,29 @@ from src.op import encode_num
 @pytest.mark.parametrize('b, expected', [
     (bytes.fromhex('06' + '767695935687'),
      [0x76, 0x76, 0x95, 0x93, 0x56, 0x87]),
+    (b'\x04' + b'\x03' + b'\xff\xee\xdd', [b'\xff\xee\xdd']),
+    (b'\x52' + b'\x4c' + b'\x50' + b'\xff' * 80, [b'\xff' * 80]),
+    (b'\xfd\x07\x01' + b'\x4d' + b'\x04\x01' + b'\xff' * 260, [b'\xff' * 260]),
 ])
 def test_script_parse(b: bytes, expected: list):
     s = target.Script.parse(BytesIO(b))
     assert s.cmds == expected
+
+
+@pytest.mark.parametrize('cmds, expected', [
+    ([b'\xff\xee\xdd'], b'\x04' + b'\x03' + b'\xff\xee\xdd'),
+    ([b'\xff' * 80], b'\x52' + b'\x4c' + b'\x50' + b'\xff' * 80),
+    ([b'\xff' * 260], b'\xfd\x07\x01' + b'\x4d' + b'\x04\x01' + b'\xff' * 260),
+])
+def test_script_serialize(cmds: list, expected: bytes):
+    s = target.Script(cmds=cmds)
+    assert s.serialize() == expected
+
+
+def test_script_serialize_raise():
+    s = target.Script(cmds=[b'\xff' * 521])
+    with pytest.raises(ValueError):
+        s.raw_serialize()
 
 
 def test_script_evaluate1():
