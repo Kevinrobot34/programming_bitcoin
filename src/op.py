@@ -1,4 +1,5 @@
 import hashlib
+from typing import Callable
 
 from src.helper import hash160, hash256
 from src.secp256k1 import S256Point, Signature
@@ -785,7 +786,7 @@ def op_checksequenceverify(stack, version, sequence):
     return True
 
 
-OP_CODE_FUNCTIONS = {
+OP_CODE_FUNCTIONS: dict[int, Callable] = {
     0: op_0,
     79: op_1negate,
     81: op_1,

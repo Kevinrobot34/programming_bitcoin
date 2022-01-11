@@ -1,5 +1,6 @@
 from __future__ import annotations
 
+import json
 from io import BytesIO
 from typing import Optional
 
@@ -33,7 +34,7 @@ class Tx:
         return hash256(self.serialize())[::-1]
 
     @classmethod
-    def parse(cls, stream, testnet: bool = False):
+    def parse(cls, stream, testnet: bool = False) -> Tx:
         version = little_endian_to_int(stream.read(cls.bytes_version))
 
         n_tx_in = read_varint(stream)
@@ -142,10 +143,12 @@ class TxFetcher:
 
     @classmethod
     def get_url(cls, testnet: bool = False) -> str:
+        # https://blockstream.info/nojs/
+        # https://github.com/Blockstream/esplora/blob/master/API.md
         if testnet:
-            return 'https://testnet.programmingbitcoin.com'
+            return 'https://blockstream.info/testnet/api'
         else:
-            return 'https://mainnet.programmingbitcoin.com'
+            return 'https://blockstream.info/api'
 
     @classmethod
     def fetch(cls,
@@ -153,7 +156,7 @@ class TxFetcher:
               testnet: bool = False,
               fresh: bool = False) -> Tx:
         if fresh or (tx_id not in cls.cache):
-            url = f'{cls.get_url(testnet)}/tx/{tx_id}.hex'
+            url = f'{cls.get_url(testnet)}/tx/{tx_id}/hex'
             response = requests.get(url)
             try:
                 raw = bytes.fromhex(response.text.strip())
@@ -172,3 +175,24 @@ class TxFetcher:
             cls.cache[tx_id] = tx
         cls.cache[tx_id].testnet = testnet
         return cls.cache[tx_id]
+
+    @classmethod
+    def load_cache(cls, filename: str):
+        with open(filename, 'r') as reader:
+            disk_cache = json.loads(reader.read())
+        for k, raw_hex in disk_cache.items():
+            raw = bytes.fromhex(raw_hex)
+            if raw[4] == 0:
+                raw = raw[:4] + raw[6:]
+                tx = Tx.parse(BytesIO(raw))
+                tx.locktime = little_endian_to_int(raw[-4:])
+            else:
+                tx = Tx.parse(BytesIO(raw))
+            cls.cache[k] = tx
+
+    @classmethod
+    def dump_cache(cls, filename: str):
+        with open(filename, 'w') as writer:
+            to_dump = {k: tx.serialize().hex() for k, tx in cls.cache.items()}
+            s = json.dumps(to_dump, sort_keys=True, indent=4)
+            writer.write(s)
