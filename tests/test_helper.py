@@ -1,3 +1,5 @@
+from io import BytesIO
+
 import pytest
 import src.helper as target
 
@@ -44,3 +46,39 @@ def test_little_endian_to_int(b: bytes, expected: int):
 ])
 def test_int_to_little_endian(n: int, length: int, expected: bytes):
     assert target.int_to_little_endian(n, length) == expected
+
+
+@pytest.mark.parametrize('b, expected', [
+    (b'\x01', 1),
+    (b'\xfc', 252),
+    (b'\xfd' + b'\xfd\x00', 253),
+    (b'\xfd' + b'\xff\x00', 255),
+    (b'\xfd' + b'\x2b\x02', 555),
+    (b'\xfe' + b'\x00\x00\x01\x00', 1 << 16),
+    (b'\xff' + b'\x00\x00\x00\x00\x01\x00\x00\x00', 1 << 32),
+])
+def test_read_varint(b: bytes, expected: int):
+    s = BytesIO(b)
+    assert target.read_varint(s) == expected
+
+
+@pytest.mark.parametrize('i, expected', [
+    (1, b'\x01'),
+    (252, b'\xfc'),
+    (253, b'\xfd' + b'\xfd\x00'),
+    (255, b'\xfd' + b'\xff\x00'),
+    (555, b'\xfd' + b'\x2b\x02'),
+    (1 << 16, b'\xfe' + b'\x00\x00\x01\x00'),
+    (1 << 32, b'\xff' + b'\x00\x00\x00\x00\x01\x00\x00\x00'),
+])
+def test_encode_varint(i: int, expected: bytes):
+    assert target.encode_varint(i) == expected
+
+
+@pytest.mark.parametrize('i', [
+    0x1_0000_0000_0000_0000,
+    0x1_0000_0000_0000_0000_0000,
+])
+def test_encode_varint_raise(i: int):
+    with pytest.raises(ValueError, match='Integer too large:'):
+        target.encode_varint(i)

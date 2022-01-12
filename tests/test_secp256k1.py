@@ -107,7 +107,11 @@ def test_s256point_address(p: target.S256Point, compressed: bool,
 ])
 def test_signature_der(r, s, expected):
     sig = target.Signature(r, s)
-    assert sig.der() == expected
+    sig_der = sig.der()
+    assert sig_der == expected
+    sig_recover = target.Signature.parse(sig_der)
+    assert sig_recover.r == r
+    assert sig_recover.s == s
 
 
 @pytest.mark.parametrize('s, compressed, testnet, expected', [
