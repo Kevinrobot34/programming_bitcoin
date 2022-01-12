@@ -143,10 +143,9 @@ def test_op_verify(s: list, expected_s: list, expected_r: bool):
 
 @pytest.mark.parametrize('s, expected_s, expected_r', [
     ([], [], False),
-    ([b''], [], False),
-    ([b'\x01'], [], True),
-    ([b'\xff'], [], True),
-    ([b'\x01', b'\x02'], [b'\x01'], True),
+    ([b''], [b''], True),
+    ([b'\x01'], [b'\x01', b'\x01'], True),
+    ([b'\x01', b'\x02'], [b'\x01', b'\x02', b'\x02'], True),
 ])
 def test_op_ifdup(s: list, expected_s: list, expected_r: bool):
     ret = target.op_ifdup(s)  # 115
