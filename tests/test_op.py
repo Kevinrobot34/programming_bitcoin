@@ -128,6 +128,18 @@ def test_operations2():
     assert s == [b'\x5a', b'\x5b', b'\x6c\x21']
 
 
+def test_operations3():
+    stack = [4, 3, 2, 1, target.encode_num(3)]
+
+    s = stack[:]
+    assert target.op_pick(s)  # 121
+    assert s == [4, 3, 2, 1, 4]
+
+    s = stack[:]
+    assert target.op_roll(s)  # 122
+    assert s == [3, 2, 1, 4]
+
+
 @pytest.mark.parametrize('s, expected_s, expected_r', [
     ([], [], False),
     ([b''], [], False),

@@ -17,6 +17,12 @@ def test_script_parse(b: bytes, expected: list):
     assert s.cmds == expected
 
 
+def test_script_parse_fail1():
+    b = b'\x02' + b'\x03' + b'\xff\xee\xdd'
+    with pytest.raises(SyntaxError):
+        _ = target.Script.parse(BytesIO(b))
+
+
 @pytest.mark.parametrize('cmds, expected', [
     ([0x76, 0x76, 0x95, 0x93, 0x56, 0x87
       ], bytes.fromhex('06' + '767695935687')),
@@ -97,3 +103,26 @@ a82be331fea48037b8b5d71f0e332edf93ac3500eb4ddc0decc1a864790c782c76215660dd3097\
 
     combined_script = script_sig + script_pubkey
     assert combined_script.evaluate(0)
+
+
+def test_script_evaluate5():
+    # OP_5, OP_5, OP_TOALTSTACK, OP_FROMALTSTACK, OP_EQUAL
+    s = target.Script([85, 85, 107, 108, 135])
+    assert s.evaluate(0)
+
+
+def test_script_evaluate_fail1():
+    # OP_0
+    s = target.Script([0])
+    assert not s.evaluate(0)
+
+
+def test_script_evaluate_fail2():
+    opcodes = [
+        109, 110, 111, 112, 113, 114, 115, 117, 118, 119, 120, 123, 124, 125,
+        130, 135, 139, 140, 143, 144, 145, 146, 147, 148, 149, 154, 155, 156,
+        158, 159, 160, 161, 162, 163, 164, 165
+    ]
+    for opcode in opcodes:
+        s = target.Script([opcode])
+        assert not s.evaluate(0)
