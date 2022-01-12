@@ -157,13 +157,11 @@ def op_nop(stack: list) -> bool:
     return True
 
 
-def op_if(stack: list, items: list) -> bool:
-    # 99: If the top stack value is not False, the statements are executed. The top stack value is removed.
+def base_if_parser(stack: list, items: list, true_items: list,
+                   false_items: list) -> bool:
     if len(stack) < 1:
         return False
     # go through and re-make the items array based on the top stack element
-    true_items: list = []
-    false_items: list = []
     current_array = true_items
     found = False
     num_endifs_needed = 1
@@ -184,6 +182,14 @@ def op_if(stack: list, items: list) -> bool:
                 current_array.append(item)
         else:
             current_array.append(item)
+    return found
+
+
+def op_if(stack: list, items: list) -> bool:
+    # 99: If the top stack value is not False, the statements are executed. The top stack value is removed.
+    true_items: list = []
+    false_items: list = []
+    found = base_if_parser(stack, items, true_items, false_items)
     if not found:
         return False
     element = stack.pop()
@@ -196,31 +202,9 @@ def op_if(stack: list, items: list) -> bool:
 
 def op_notif(stack: list, items: list) -> bool:
     # 100: If the top stack value is False, the statements are executed. The top stack value is removed.
-    if len(stack) < 1:
-        return False
-    # go through and re-make the items array based on the top stack element
     true_items: list = []
     false_items: list = []
-    current_array = true_items
-    found = False
-    num_endifs_needed = 1
-    while len(items) > 0:
-        item = items.pop(0)
-        if item in (OP_IF, OP_NOTIF):
-            # nested if, we have to go another endif
-            num_endifs_needed += 1
-            current_array.append(item)
-        elif num_endifs_needed == 1 and item == OP_ELSE:
-            current_array = false_items
-        elif item == OP_ENDIF:
-            if num_endifs_needed == 1:
-                found = True
-                break
-            else:
-                num_endifs_needed -= 1
-                current_array.append(item)
-        else:
-            current_array.append(item)
+    found = base_if_parser(stack, items, true_items, false_items)
     if not found:
         return False
     element = stack.pop()
