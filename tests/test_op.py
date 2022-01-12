@@ -32,6 +32,22 @@ def test_operations1():
     stack = [6, 5, 4, 3, 2, 1]
 
     s = stack[:]
+    assert target.op_0(s)
+    assert s == [6, 5, 4, 3, 2, 1, b'']
+
+    s = stack[:]
+    assert target.op_nop(s)
+    assert s == [6, 5, 4, 3, 2, 1]
+
+    s = stack[:]
+    assert not target.op_return(s)
+    assert s == [6, 5, 4, 3, 2, 1]
+
+    s = stack[:]
+    assert target.op_1negate(s)
+    assert s == [6, 5, 4, 3, 2, 1, b'\x81']
+
+    s = stack[:]
     assert target.op_2drop(s)  # 109
     assert s == [6, 5, 4, 3]
 
@@ -62,6 +78,10 @@ def test_operations1():
     s = stack[:]
     assert target.op_drop(s)  # 117
     assert s == [6, 5, 4, 3, 2]
+
+    s = stack[:]
+    assert target.op_nip(s)  # 119
+    assert s == [6, 5, 4, 3, 1]
 
     s = stack[:]
     assert target.op_over(s)  # 120
@@ -106,6 +126,61 @@ def test_operations2():
     s = stack[:]
     assert target.op_mul(s)  # 149
     assert s == [b'\x5a', b'\x5b', b'\x6c\x21']
+
+
+@pytest.mark.parametrize('s, expected_s, expected_r', [
+    ([], [], False),
+    ([b''], [], False),
+    ([b'\x01'], [], True),
+    ([b'\xff'], [], True),
+    ([b'\x01', b'\x02'], [b'\x01'], True),
+])
+def test_op_verify(s: list, expected_s: list, expected_r: bool):
+    ret = target.op_verify(s)  # 105
+    assert s == expected_s
+    assert ret == expected_r
+
+
+@pytest.mark.parametrize('s, expected_s, expected_r', [
+    ([], [], False),
+    ([b''], [], False),
+    ([b'\x01'], [], True),
+    ([b'\xff'], [], True),
+    ([b'\x01', b'\x02'], [b'\x01'], True),
+])
+def test_op_ifdup(s: list, expected_s: list, expected_r: bool):
+    ret = target.op_ifdup(s)  # 115
+    assert s == expected_s
+    assert ret == expected_r
+
+
+@pytest.mark.parametrize('s, expected', [
+    ([b'\x01'], [b'\x01']),
+    ([b'\x81'], [b'\x01']),
+])
+def test_op_abs(s: list, expected: list):
+    assert target.op_abs(s)  # 144
+    assert s == expected
+
+
+@pytest.mark.parametrize('s, expected', [
+    ([b''], [b'\x01']),
+    ([b'\x01'], [b'']),
+    ([b'\x02'], [b'']),
+])
+def test_op_not(s: list, expected: list):
+    assert target.op_not(s)  # 145
+    assert s == expected
+
+
+@pytest.mark.parametrize('s, expected', [
+    ([b''], [b'']),
+    ([b'\x01'], [b'\x01']),
+    ([b'\x02'], [b'\x01']),
+])
+def test_op_0notequal(s: list, expected: list):
+    assert target.op_0notequal(s)  # 146
+    assert s == expected
 
 
 @pytest.mark.parametrize('s, expected', [
