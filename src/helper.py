@@ -2,6 +2,7 @@ import hashlib
 from io import BytesIO
 
 BASE58_ALPHABET = '123456789ABCDEFGHJKLMNPQRSTUVWXYZabcdefghijkmnopqrstuvwxyz'
+SIGHASH_ALL = 1
 
 
 def hash160(s: bytes) -> bytes:

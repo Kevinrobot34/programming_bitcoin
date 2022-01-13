@@ -6,8 +6,9 @@ from typing import Optional
 
 import requests
 
-from src.helper import (encode_varint, hash256, int_to_little_endian,
-                        little_endian_to_int, read_varint)
+from src.helper import (SIGHASH_ALL, encode_varint, hash256,
+                        int_to_little_endian, little_endian_to_int,
+                        read_varint)
 from src.script import Script
 
 
@@ -72,6 +73,37 @@ class Tx:
         for tx_out_i in self.tx_outs:
             out_amounts += tx_out_i.amount
         return in_values - out_amounts
+
+    def sig_hash(self,
+                 input_index: int,
+                 hash_type: int = SIGHASH_ALL) -> bytes:
+        modified_tx_ins = [
+            TxIn(prev_tx=tx_in.prev_tx,
+                 prev_index=tx_in.prev_index,
+                 script_sig=tx_in.script_pubkey(self.testnet),
+                 sequence=tx_in.sequence)
+            if i == input_index else TxIn(prev_tx=tx_in.prev_tx,
+                                          prev_index=tx_in.prev_index,
+                                          script_sig=None,
+                                          sequence=tx_in.sequence)
+            for i, tx_in in enumerate(self.tx_ins)
+        ]
+        modified_tx = Tx(version=self.version,
+                         tx_ins=modified_tx_ins,
+                         tx_outs=self.tx_outs,
+                         locktime=self.locktime)
+
+        sig_hash = hash256(modified_tx.serialize() +
+                           int_to_little_endian(hash_type, 4))
+        return sig_hash
+
+    def verify_input(self, input_index: int) -> bool:
+        tx_in = self.tx_ins[input_index]
+        script_pub_key = tx_in.script_pubkey(self.testnet)
+        script_sig = tx_in.script_sig
+        z = self.sig_hash(input_index)
+        s = script_sig + script_pub_key
+        return s.evaluate(z)
 
 
 class TxIn:
