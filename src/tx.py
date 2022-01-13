@@ -98,12 +98,22 @@ class Tx:
         return sig_hash
 
     def verify_input(self, input_index: int) -> bool:
+        # verify i-th transaction input
         tx_in = self.tx_ins[input_index]
         script_pub_key = tx_in.script_pubkey(self.testnet)
         script_sig = tx_in.script_sig
         z = self.sig_hash(input_index)
         s = script_sig + script_pub_key
         return s.evaluate(z)
+
+    def verify(self) -> bool:
+        # verify whole transaction
+        if self.fee() < 0:
+            return False
+        for i in range(len(self.tx_ins)):
+            if not self.verify_input(i):
+                return False
+        return True
 
 
 class TxIn:
