@@ -30,6 +30,29 @@ def test_encode_decode_base58(b: bytes):
     assert b == target.decode_base58(target.encode_base58(b))
 
 
+@pytest.mark.parametrize(
+    'b', [b'\x00\x00\x00\x00\x05', b'\x05', b'\xff', b'\x00\xff'])
+def test_encode_decode_base58_checksum(b: bytes):
+    assert b == target.decode_base58_checksum(target.encode_base58_checksum(b))
+
+
+@pytest.mark.parametrize('s, expected', [
+    ('mnrVtF8DWjMu839VW3rBfgYaAfKk8983Xf',
+     '6f507b27411ccf7f16f10297de6cef3f291623eddf'),
+])
+def test_decode_base58_checksum(s: str, expected: str):
+    assert target.decode_base58_checksum(s).hex() == expected
+
+
+@pytest.mark.parametrize('s', [
+    '11116' + 'aaaa',
+    '21' + 'bbbb',
+])
+def test_decode_base58_checksum_fail(s: str):
+    with pytest.raises(ValueError):
+        target.decode_base58_checksum(s)
+
+
 @pytest.mark.parametrize('b, expected', [
     (bytes.fromhex('f401'), 500),
     (bytes.fromhex('99c3980000000000'), 10011545),
