@@ -84,7 +84,6 @@ class Script:
                     raise ValueError('too long an cmd')
 
                 result += cmd_i
-            print(cmd_i, result)
         return result
 
     def serialize(self) -> bytes:
@@ -92,7 +91,7 @@ class Script:
         total = len(result)
         return encode_varint(total) + result
 
-    def evaluate(self, z) -> bool:
+    def evaluate(self, z: int) -> bool:
         cmds: list[Union[bytes, int]] = self.cmds[:]
         stack: list = []
         altstack: list = []
@@ -126,3 +125,9 @@ class Script:
         if stack.pop() == b'':
             return False
         return True
+
+
+def p2pkh_script(h160: bytes) -> Script:
+    '''Takes a hash160 and returns the p2pkh ScriptPubKey'''
+    # OP_DUP, OP_HASH160, h160: bytes, OP_EQUALVERIFY, OP_CHECKSIG
+    return Script([0x76, 0xa9, h160, 0x88, 0xac])

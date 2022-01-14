@@ -45,6 +45,15 @@ def encode_base58_checksum(b: bytes) -> str:
     return encode_base58(b + hash256(b)[:4])
 
 
+def decode_base58_checksum(s: str) -> bytes:
+    b_cs = decode_base58(s)
+    b = b_cs[:-4]
+    check_sum = b[-4:]
+    if hash256(b)[:4] != check_sum:
+        raise ValueError('Invalid check_sum')
+    return b
+
+
 def little_endian_to_int(b: bytes) -> int:
     return int.from_bytes(b, 'little')
 

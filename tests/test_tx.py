@@ -78,3 +78,22 @@ def test_tx_fee(hex_str: str, expected: int):
     stream = BytesIO(bytes.fromhex(hex_str))
     tx = target.Tx.parse(stream)
     assert tx.fee() == expected
+
+
+@pytest.mark.parametrize('tx_id, input_index, expected', [
+    ('452c629d67e41baec3ac6f04fe744b4b9617f8f859c63b3002f8684e7a4fee03', 0,
+     int('27e0c5994dec7824e56dec6b2fcb342eb7cdb0d0957c2fce9882f715e85d81a6',
+         16)),
+])
+def test_tx_sig_hash(tx_id: str, input_index: int, expected: int):
+    tx = target.TxFetcher.fetch(tx_id)
+    assert tx.sig_hash(input_index) == expected
+
+
+@pytest.mark.parametrize('tx_id, testnet', [
+    ('452c629d67e41baec3ac6f04fe744b4b9617f8f859c63b3002f8684e7a4fee03',
+     False),
+])
+def test_tx_verify_p2pkh(tx_id: str, testnet: bool):
+    tx = target.TxFetcher.fetch(tx_id=tx_id, testnet=testnet)
+    assert tx.verify()

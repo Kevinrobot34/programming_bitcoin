@@ -145,7 +145,7 @@ class S256Point(Point):
         coefficient %= N
         return super().__rmul__(coefficient)
 
-    def verify(self, z, sig: Signature) -> bool:
+    def verify(self, z: int, sig: Signature) -> bool:
         # check if uG + vP is equal to sig.r
         # self: P
         s_inv = pow(sig.s, N - 2, N)
