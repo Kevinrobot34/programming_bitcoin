@@ -4,6 +4,7 @@ from typing import Optional
 import pytest
 import src.tx as target
 from src.script import Script
+from src.secp256k1 import PrivateKey
 
 
 @pytest.mark.parametrize('a, s', [
@@ -97,3 +98,15 @@ def test_tx_sig_hash(tx_id: str, input_index: int, expected: int):
 def test_tx_verify_p2pkh(tx_id: str, testnet: bool):
     tx = target.TxFetcher.fetch(tx_id=tx_id, testnet=testnet)
     assert tx.verify()
+
+
+def test_tx_sign_input():
+    private_key = PrivateKey(secret=8675309)
+    stream = BytesIO(
+        bytes.fromhex(
+            '010000000199a24308080ab26e6fb65c4eccfadf76749bb5bfa8cb08f291320b3c21e56f0d0d00000000ffffffff02408af701000000001976a914d52ad7ca9b3d096a38e752c2018e6fbc40cdf26f88ac80969800000000001976a914507b27411ccf7f16f10297de6cef3f291623eddf88ac00000000'
+        ))
+    tx = target.Tx.parse(stream, testnet=True)
+    assert tx.sign_input(pk=private_key, input_index=0)
+    want = '010000000199a24308080ab26e6fb65c4eccfadf76749bb5bfa8cb08f291320b3c21e56f0d0d0000006b4830450221008ed46aa2cf12d6d81065bfabe903670165b538f65ee9a3385e6327d80c66d3b502203124f804410527497329ec4715e18558082d489b218677bd029e7fa306a72236012103935581e52c354cd2f484fe8ed83af7a3097005b2f9c60bff71d35bd795f54b67ffffffff02408af701000000001976a914d52ad7ca9b3d096a38e752c2018e6fbc40cdf26f88ac80969800000000001976a914507b27411ccf7f16f10297de6cef3f291623eddf88ac00000000'
+    assert tx.serialize().hex() == want
