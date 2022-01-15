@@ -700,12 +700,12 @@ def op_hash256(stack: list) -> bool:
     return True
 
 
-def op_checksig(stack: list, z) -> bool:
+def op_checksig(stack: list, z: int) -> bool:
     # 172:
     if len(stack) < 2:
         return False
     sec_pubkey = stack.pop()
-    der_sig = stack.pop()
+    der_sig = stack.pop()[:-1]
     try:
         pubkey = S256Point.parse(sec_pubkey)
         sig = Signature.parse(der_sig)
@@ -718,17 +718,17 @@ def op_checksig(stack: list, z) -> bool:
     return True
 
 
-def op_checksigverify(stack: list, z) -> bool:
+def op_checksigverify(stack: list, z: int) -> bool:
     # 173: Same as OP_CHECKSIG, but OP_VERIFY is executed afterward.
     return op_checksig(stack, z) and op_verify(stack)
 
 
-def op_checkmultisig(stack, z):
+def op_checkmultisig(stack: list, z: int):
     # 174
     raise NotImplementedError
 
 
-def op_checkmultisigverify(stack: list, z) -> bool:
+def op_checkmultisigverify(stack: list, z: int) -> bool:
     # 175: Same as OP_CHECKMULTISIG, but OP_VERIFY is executed afterward.
     return op_checkmultisig(stack, z) and op_verify(stack)
 

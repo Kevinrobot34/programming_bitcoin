@@ -6,9 +6,11 @@ from typing import Optional
 
 import requests
 
-from src.helper import (encode_varint, hash256, int_to_little_endian,
-                        little_endian_to_int, read_varint)
+from src.helper import (SIGHASH_ALL, encode_varint, hash256,
+                        int_to_little_endian, little_endian_to_int,
+                        read_varint)
 from src.script import Script
+from src.secp256k1 import PrivateKey
 
 
 class Tx:
@@ -72,6 +74,56 @@ class Tx:
         for tx_out_i in self.tx_outs:
             out_amounts += tx_out_i.amount
         return in_values - out_amounts
+
+    def sig_hash(self, input_index: int, hash_type: int = SIGHASH_ALL) -> int:
+        modified_tx_ins = [
+            TxIn(prev_tx=tx_in.prev_tx,
+                 prev_index=tx_in.prev_index,
+                 script_sig=tx_in.script_pubkey(self.testnet),
+                 sequence=tx_in.sequence)
+            if i == input_index else TxIn(prev_tx=tx_in.prev_tx,
+                                          prev_index=tx_in.prev_index,
+                                          script_sig=None,
+                                          sequence=tx_in.sequence)
+            for i, tx_in in enumerate(self.tx_ins)
+        ]
+        modified_tx = Tx(version=self.version,
+                         tx_ins=modified_tx_ins,
+                         tx_outs=self.tx_outs,
+                         locktime=self.locktime)
+
+        h256 = hash256(modified_tx.serialize() +
+                       int_to_little_endian(hash_type, 4))
+        return int.from_bytes(h256, 'big')
+
+    def verify_input(self, input_index: int) -> bool:
+        # verify i-th transaction input
+        tx_in = self.tx_ins[input_index]
+        script_pub_key = tx_in.script_pubkey(testnet=self.testnet)
+        script_sig = tx_in.script_sig
+        z = self.sig_hash(input_index)
+        s = script_sig + script_pub_key
+        return s.evaluate(z)
+
+    def verify(self) -> bool:
+        # verify whole transaction
+        if self.fee() < 0:
+            return False
+        for i in range(len(self.tx_ins)):
+            if not self.verify_input(i):
+                return False
+        return True
+
+    def sign_input(self,
+                   pk: PrivateKey,
+                   input_index: int,
+                   hash_type: int = SIGHASH_ALL) -> bool:
+        z = self.sig_hash(input_index, hash_type)
+        der = pk.sign(z).der()
+        sig = der + hash_type.to_bytes(1, 'big')
+        sec = pk.public_point.sec()
+        self.tx_ins[input_index].script_sig = Script([sig, sec])
+        return self.verify_input(input_index)
 
 
 class TxIn:

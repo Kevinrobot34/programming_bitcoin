@@ -2,6 +2,9 @@ import hashlib
 from io import BytesIO
 
 BASE58_ALPHABET = '123456789ABCDEFGHJKLMNPQRSTUVWXYZabcdefghijkmnopqrstuvwxyz'
+SIGHASH_ALL = 1
+SIGHASH_NONE = 2
+SIGHASH_SINGLE = 3
 
 
 def hash160(s: bytes) -> bytes:
@@ -36,12 +39,25 @@ def decode_base58(s: str) -> bytes:
         ret *= 58
         ret += BASE58_ALPHABET.index(si)
     n_prefix_1 = len(s) - len(s.lstrip('1'))
-    n = n_prefix_1 + (ret + 256 - 1) // 256
-    return ret.to_bytes(n, 'big')
+    n = 0
+    r = ret
+    while r > 0:
+        n += 1
+        r //= 256
+    return ret.to_bytes(n_prefix_1 + n, 'big')
 
 
 def encode_base58_checksum(b: bytes) -> str:
     return encode_base58(b + hash256(b)[:4])
+
+
+def decode_base58_checksum(s: str) -> bytes:
+    b_cs = decode_base58(s)
+    b = b_cs[:-4]
+    checksum = b_cs[-4:]
+    if hash256(b)[:4] != checksum:
+        raise ValueError('Invalid checksum')
+    return b
 
 
 def little_endian_to_int(b: bytes) -> int:

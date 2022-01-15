@@ -112,7 +112,7 @@ def test_script_evaluate5():
 
 
 def test_script_evaluate_fail1():
-    # OP_0
+    # OP_0 -> fail with invalid top element of stack
     s = target.Script([0])
     assert not s.evaluate(0)
 
@@ -126,3 +126,9 @@ def test_script_evaluate_fail2():
     for opcode in opcodes:
         s = target.Script([opcode])
         assert not s.evaluate(0)
+
+
+def test_script_evaluate_fail3():
+    # OP_NOP -> fail with empty stack
+    s = target.Script([97])
+    assert not s.evaluate(0)
