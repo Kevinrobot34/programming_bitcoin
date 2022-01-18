@@ -75,11 +75,15 @@ class Tx:
             out_amounts += tx_out_i.amount
         return in_values - out_amounts
 
-    def sig_hash(self, input_index: int, hash_type: int = SIGHASH_ALL) -> int:
+    def sig_hash(self,
+                 input_index: int,
+                 hash_type: int = SIGHASH_ALL,
+                 redeem_script: Optional[Script] = None) -> int:
         modified_tx_ins = [
             TxIn(prev_tx=tx_in.prev_tx,
                  prev_index=tx_in.prev_index,
-                 script_sig=tx_in.script_pubkey(self.testnet),
+                 script_sig=redeem_script
+                 if redeem_script else tx_in.script_pubkey(self.testnet),
                  sequence=tx_in.sequence)
             if i == input_index else TxIn(prev_tx=tx_in.prev_tx,
                                           prev_index=tx_in.prev_index,
@@ -99,10 +103,19 @@ class Tx:
     def verify_input(self, input_index: int) -> bool:
         # verify i-th transaction input
         tx_in = self.tx_ins[input_index]
-        script_pub_key = tx_in.script_pubkey(testnet=self.testnet)
+        script_pubkey = tx_in.script_pubkey(testnet=self.testnet)
+        if script_pubkey.is_p2sh_script_pubkey():
+            cmd = tx_in.script_sig.cmds[-1]
+            if isinstance(cmd, bytes):
+                raw_redeem = encode_varint(len(cmd)) + cmd
+                redeem_script = Script.parse(BytesIO(raw_redeem))
+            else:
+                raise ValueError('Invalid type: RedeemScript in ScriptSig')
+        else:
+            redeem_script = None
         script_sig = tx_in.script_sig
-        z = self.sig_hash(input_index)
-        s = script_sig + script_pub_key
+        z = self.sig_hash(input_index, redeem_script=redeem_script)
+        s = script_sig + script_pubkey
         return s.evaluate(z)
 
     def verify(self) -> bool:
