@@ -100,6 +100,12 @@ def test_tx_verify_p2pkh(tx_id: str, testnet: bool):
     assert tx.verify()
 
 
+def test_script_p2sh_1():
+    tx = target.TxFetcher.fetch(
+        '46df1a9484d0a81d03ce0ee543ab6e1a23ed06175c104a178268fad381216c2b')
+    assert tx.verify()
+
+
 def test_tx_sign_input():
     private_key = PrivateKey(secret=8675309)
     stream = BytesIO(
