@@ -705,6 +705,7 @@ def op_checksig(stack: list, z: int) -> bool:
     if len(stack) < 2:
         return False
     sec_pubkey = stack.pop()
+    # take off the last byte of the signature as that's the hash_type
     der_sig = stack.pop()[:-1]
     try:
         pubkey = S256Point.parse(sec_pubkey)
@@ -737,16 +738,17 @@ def op_checkmultisig(stack: list, z: int) -> bool:
         sec_pubkeys.append(stack.pop())
     m = decode_num(stack.pop())
     # read m signatures and a number:0
+    if len(stack) < m + 1:
+        return False
     der_signatures = []
     for _ in range(m):
-        der_signatures.append(stack.pop())
+        der_signatures.append(stack.pop()[:-1])
     stack.pop()  # to avoid off-by-one error
 
     try:
         # parse
         points = [S256Point.parse(sec) for sec in sec_pubkeys]
         sigs = [Signature.parse(der) for der in der_signatures]
-
         # evaluate
         for sig in sigs:
             if len(points) == 0:
