@@ -9,7 +9,8 @@ from src.helper import (encode_varint, int_to_little_endian,
 from src.op import (OP_CHECKMULTISIG, OP_CHECKMULTISIGVERIFY, OP_CHECKSIG,
                     OP_CHECKSIGVERIFY, OP_CODE_FUNCTIONS, OP_CODE_NAMES,
                     OP_FROMALTSTACK, OP_IF, OP_NOTIF, OP_PUSHDATA1,
-                    OP_PUSHDATA2, OP_TOALTSTACK)
+                    OP_PUSHDATA2, OP_TOALTSTACK, op_equal, op_hash160,
+                    op_verify)
 
 LOGGER = getLogger(__name__)
 
@@ -120,11 +121,54 @@ class Script:
             else:
                 stack.append(cmd_i)
 
+                # parse RedeemScript
+                if is_p2sh_script_pubkey(self.cmds):
+                    cmds.pop()
+                    h160 = cmds.pop()
+                    cmds.pop()
+                    if not op_hash160(stack):
+                        return False
+                    stack.append(h160)
+                    if not op_equal(stack):
+                        return False
+                    if not op_verify(stack):
+                        LOGGER.info('bad p2sh h160')
+                        return False
+                    redeem_script = encode_varint(len(cmd_i)) + cmd_i
+                    stream = BytesIO(redeem_script)
+                    cmds.extend(Script.parse(stream).cmds)
+
         if len(stack) == 0:
             return False
         if stack.pop() == b'':
             return False
         return True
+
+
+def is_p2pkh_script_pubkey(cmds: list[Union[bytes, int]]) -> bool:
+    '''
+    Returns whether this follows
+    [OP_DUP, OP_HASH160, <20 byte hash>, OP_EQUALVERIFY, OP_CHECKSIG]
+    pattern.
+    '''
+    return len(cmds) == 5 \
+        and cmds[0] == 0x76 \
+        and cmds[1] == 0xa9 \
+        and isinstance(cmds[2], bytes) and len(cmds[2]) == 20 \
+        and cmds[3] == 0x88 \
+        and cmds[4] == 0xac
+
+
+def is_p2sh_script_pubkey(cmds: list[Union[bytes, int]]) -> bool:
+    '''
+    Returns whether this follows
+    [OP_HASH160, <20 byte hash>, OP_EQUAL]
+    pattern.
+    '''
+    return len(cmds) == 3 \
+        and cmds[0] == 0xa9 \
+        and isinstance(cmds[1], bytes) and len(cmds[1]) == 20 \
+        and cmds[2] == 0x87
 
 
 def p2pkh_script(h160: bytes) -> Script:

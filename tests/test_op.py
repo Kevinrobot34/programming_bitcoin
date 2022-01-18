@@ -1,5 +1,7 @@
 import pytest
 import src.op as target
+from src.helper import int_to_little_endian
+from src.secp256k1 import PrivateKey
 
 
 @pytest.mark.parametrize('n, expected', [
@@ -312,3 +314,117 @@ def test_op_max(s: list, expected: list):
 def test_op_within(s: list, expected: list):
     assert target.op_within(s)  # 165
     assert s == expected
+
+
+def test_op_checksig_1():
+    z = 0x7c076ff316692a3d7eb3c3bb0f8b1488cf72e1afcd929e29307032997a838a3d
+    sec = bytes.fromhex(
+        '04887387e452b8eacc4acfde10d9aaf7f6d9a0f975aabb10d006e4da568744d06c61de6d95231cd89026e286df3b6ae4a894a3378e393e93a0f45b666329a0ae34'
+    )
+    sig = bytes.fromhex(
+        '3045022000eff69ef2b1bd93a66ed5219add4fb51e11a840f404876325a1e8ffe0529a2c022100c7207fee197d27c618aea621406f6bf5ef6fca38681d82b2f06fddbdce6feab601'
+    )
+    stack = [sig, sec]
+    assert target.op_checksig(stack, z)
+    assert target.decode_num(stack[0]) == 1
+
+
+def test_op_checksig_2():
+    z = 456
+    pk = PrivateKey(secret=123)
+    sig = pk.sign(z).der() + int_to_little_endian(1, 1)
+    sec = pk.public_point.sec()
+    stack = [sig, sec]
+    assert target.op_checksig(stack, z)
+    assert target.decode_num(stack[0]) == 1
+
+    stack = [sig, sec]
+    assert target.op_checksig(stack, z + 1)
+    assert target.decode_num(stack[0]) == 0
+
+
+def test_op_checksig_fail_1():
+    z = 456
+    pk = PrivateKey(secret=123)
+    sig_true = pk.sign(z).der() + int_to_little_endian(1, 1)
+    sig_false = pk.sign(z).der() + int_to_little_endian(1, 5)
+    sec_true = pk.public_point.sec()
+    sec_false = int_to_little_endian(1, 5) + pk.public_point.sec()
+
+    stack = [sig_false, sec_true]
+    assert not target.op_checksig(stack, z)
+
+    stack = [sig_true, sec_false]
+    assert not target.op_checksig(stack, z)
+
+
+def test_op_checkmultisig_1():
+    # 2-of-2 bare multisig
+    z = 456
+    pk1 = PrivateKey(secret=123)
+    sig1 = pk1.sign(z).der() + int_to_little_endian(1, 1)
+    sec1 = pk1.public_point.sec()
+
+    pk2 = PrivateKey(secret=789)
+    sig2 = pk2.sign(z).der() + int_to_little_endian(1, 1)
+    sec2 = pk2.public_point.sec()
+
+    stack = [b'', sig1, sig2, b'\x02', sec1, sec2, b'\x02']
+    assert target.op_checkmultisig(stack, z)
+    assert target.decode_num(stack[0]) == 1
+
+
+def test_op_checkmultisig_2():
+    # 1-of-2 bare multisig
+    z = 456
+    pk1 = PrivateKey(secret=123)
+    sig1 = pk1.sign(z).der() + int_to_little_endian(1, 1)
+    sec1 = pk1.public_point.sec()
+
+    pk2 = PrivateKey(secret=789)
+    sig2 = pk2.sign(z).der() + int_to_little_endian(1, 1)
+    sec2 = pk2.public_point.sec()
+
+    stack = [b'', sig2, b'\x01', sec1, sec2, b'\x02']
+    assert target.op_checkmultisig(stack, z)
+    assert target.decode_num(stack[0]) == 1
+
+    stack = [b'', sig1, b'\x01', sec1, sec2, b'\x02']
+    assert target.op_checkmultisig(stack, z)
+    assert target.decode_num(stack[0]) == 1
+
+
+def test_op_checkmultisig_3():
+    # 2-of-3 bare multisig
+    z = 456
+    pk1 = PrivateKey(secret=123)
+    sig1 = pk1.sign(z).der() + int_to_little_endian(1, 1)
+    sec1 = pk1.public_point.sec()
+
+    pk2 = PrivateKey(secret=789)
+    sig2 = pk2.sign(z).der() + int_to_little_endian(1, 1)
+    sec2 = pk2.public_point.sec()
+
+    pk3 = PrivateKey(secret=555)
+    sig3 = pk3.sign(z).der() + int_to_little_endian(1, 1)
+    sec3 = pk3.public_point.sec()
+
+    stack = [b'', sig2, b'\x01', sec1, sec2, sec3, b'\x03']
+    assert target.op_checkmultisig(stack, z)
+    assert target.decode_num(stack[0]) == 1
+
+    stack = [b'', sig1, sig3, b'\x02', sec1, sec2, sec3, b'\x03']
+    assert target.op_checkmultisig(stack, z)
+    assert target.decode_num(stack[0]) == 1
+
+    stack = [b'', sig2, sig3, b'\x02', sec1, sec2, sec3, b'\x03']
+    assert target.op_checkmultisig(stack, z)
+    assert target.decode_num(stack[0]) == 1
+
+    stack = [b'', sig1, sig2, sig3, b'\x03', sec1, sec2, sec3, b'\x03']
+    assert target.op_checkmultisig(stack, z)
+    assert target.decode_num(stack[0]) == 1
+
+    # fail!!
+    stack = [b'', sig3, sig1, b'\x02', sec1, sec2, sec3, b'\x03']
+    assert not target.op_checkmultisig(stack, z)
