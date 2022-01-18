@@ -1,4 +1,5 @@
 from io import BytesIO
+from pickle import FALSE
 
 import pytest
 import src.script as target
@@ -119,9 +120,10 @@ def test_script_evaluate_fail1():
 
 def test_script_evaluate_fail2():
     opcodes = [
-        109, 110, 111, 112, 113, 114, 115, 117, 118, 119, 120, 123, 124, 125,
-        130, 135, 139, 140, 143, 144, 145, 146, 147, 148, 149, 154, 155, 156,
-        158, 159, 160, 161, 162, 163, 164, 165
+        109, 110, 111, 112, 113, 114, 115, 117, 118, 119, 120, 121, 122, 123,
+        124, 125, 130, 135, 139, 140, 143, 144, 145, 146, 147, 148, 149, 154,
+        155, 156, 158, 159, 160, 161, 162, 163, 164, 165, 166, 167, 168, 169,
+        170, 172
     ]
     for opcode in opcodes:
         s = target.Script([opcode])
@@ -132,3 +134,21 @@ def test_script_evaluate_fail3():
     # OP_NOP -> fail with empty stack
     s = target.Script([97])
     assert not s.evaluate(0)
+
+
+@pytest.mark.parametrize('cmds, expected', [
+    ([0x76, 0xa9, b'11112222333344445555', 0x88, 0xac], True),
+    ([0x76, 0xa9, b'11112222333344445555', 0x88], False),
+    ([0x76, 0xa9, b'1111', 0x88, 0xac], False),
+])
+def test_is_p2pkh_script_pubkey(cmds: list, expected: bool):
+    assert target.is_p2pkh_script_pubkey(cmds) == expected
+
+
+@pytest.mark.parametrize('cmds, expected', [
+    ([0xa9, b'11112222333344445555', 0x87], True),
+    ([0xa9, b'11112222333344445555'], False),
+    ([0xa9, b'1111', 0x87], False),
+])
+def test_is_p2sh_script_pubkey(cmds: list, expected: bool):
+    assert target.is_p2sh_script_pubkey(cmds) == expected

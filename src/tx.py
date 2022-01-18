@@ -9,7 +9,7 @@ import requests
 from src.helper import (SIGHASH_ALL, encode_varint, hash256,
                         int_to_little_endian, little_endian_to_int,
                         read_varint)
-from src.script import Script
+from src.script import Script, is_p2sh_script_pubkey
 from src.secp256k1 import PrivateKey
 
 
@@ -104,7 +104,7 @@ class Tx:
         # verify i-th transaction input
         tx_in = self.tx_ins[input_index]
         script_pubkey = tx_in.script_pubkey(testnet=self.testnet)
-        if script_pubkey.is_p2sh_script_pubkey():
+        if is_p2sh_script_pubkey(script_pubkey.cmds):
             cmd = tx_in.script_sig.cmds[-1]
             if isinstance(cmd, bytes):
                 raw_redeem = encode_varint(len(cmd)) + cmd
