@@ -138,6 +138,11 @@ class Tx:
         self.tx_ins[input_index].script_sig = Script([sig, sec])
         return self.verify_input(input_index)
 
+    def is_coinbase(self) -> bool:
+        return len(self.tx_ins) == 1 \
+            and self.tx_ins[0].prev_tx == b'\x00' * 32 \
+            and self.tx_ins[0].prev_index == 0xff_ff_ff_ff
+
 
 class TxIn:
     def __init__(self,
