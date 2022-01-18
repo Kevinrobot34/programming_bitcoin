@@ -105,3 +105,23 @@ def test_encode_varint(i: int, expected: bytes):
 def test_encode_varint_raise(i: int):
     with pytest.raises(ValueError, match='Integer too large:'):
         target.encode_varint(i)
+
+
+@pytest.mark.parametrize('h160, testnet, expected', [
+    (bytes.fromhex('74d691da1574e6b3c192ecfb52cc8984ee7b6c56'), False,
+     '1BenRpVUFK65JFWcQSuHnJKzc4M8ZP8Eqa'),
+    (bytes.fromhex('74d691da1574e6b3c192ecfb52cc8984ee7b6c56'), True,
+     'mrAjisaT4LXL5MzE81sfcDYKU3wqWSvf9q'),
+])
+def test_h160_to_p2pkh_address(h160: bytes, testnet: bool, expected: str):
+    assert target.h160_to_p2pkh_address(h160, testnet) == expected
+
+
+@pytest.mark.parametrize('h160, testnet, expected', [
+    (bytes.fromhex('74d691da1574e6b3c192ecfb52cc8984ee7b6c56'), False,
+     '3CLoMMyuoDQTPRD3XYZtCvgvkadrAdvdXh'),
+    (bytes.fromhex('74d691da1574e6b3c192ecfb52cc8984ee7b6c56'), True,
+     '2N3u1R6uwQfuobCqbCgBkpsgBxvr1tZpe7B'),
+])
+def test_h160_to_p2sh_address(h160: bytes, testnet: bool, expected: str):
+    assert target.h160_to_p2sh_address(h160, testnet) == expected

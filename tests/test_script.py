@@ -1,5 +1,4 @@
 from io import BytesIO
-from pickle import FALSE
 
 import pytest
 import src.script as target
