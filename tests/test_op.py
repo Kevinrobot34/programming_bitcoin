@@ -334,11 +334,28 @@ def test_op_checksig_2():
     pk = PrivateKey(secret=123)
     sig = pk.sign(z).der() + int_to_little_endian(1, 1)
     sec = pk.public_point.sec()
-    print(sig.hex())
-    print(sec.hex())
     stack = [sig, sec]
     assert target.op_checksig(stack, z)
     assert target.decode_num(stack[0]) == 1
+
+    stack = [sig, sec]
+    assert target.op_checksig(stack, z + 1)
+    assert target.decode_num(stack[0]) == 0
+
+
+def test_op_checksig_fail_1():
+    z = 456
+    pk = PrivateKey(secret=123)
+    sig_true = pk.sign(z).der() + int_to_little_endian(1, 1)
+    sig_false = pk.sign(z).der() + int_to_little_endian(1, 5)
+    sec_true = pk.public_point.sec()
+    sec_false = int_to_little_endian(1, 5) + pk.public_point.sec()
+
+    stack = [sig_false, sec_true]
+    assert not target.op_checksig(stack, z)
+
+    stack = [sig_true, sec_false]
+    assert not target.op_checksig(stack, z)
 
 
 def test_op_checkmultisig_1():
