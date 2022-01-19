@@ -3,7 +3,8 @@ from __future__ import annotations
 import json
 from io import BytesIO
 
-from src.helper import hash256, int_to_little_endian, little_endian_to_int
+from src.helper import (bits_to_target, hash256, int_to_little_endian,
+                        little_endian_to_int)
 
 
 class Block:
@@ -46,3 +47,17 @@ class Block:
 
     def bip141(self) -> bool:
         return (self.version >> 1) & 1 == 1
+
+    def target(self) -> int:
+        return bits_to_target(self.bits)
+
+    def difficulty(self) -> float:
+        target = self.target()
+        diff = 0xffff * (256**(0x1d - 3)) / target
+        return diff
+
+    def check_pow(self) -> bool:
+        h = hash256(self.serialize())
+        proof = little_endian_to_int(h)
+        target = self.target()
+        return proof < target
