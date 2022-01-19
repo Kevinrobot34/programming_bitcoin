@@ -101,3 +101,10 @@ def h160_to_p2pkh_address(h160: bytes, testnet: bool = False) -> str:
 def h160_to_p2sh_address(h160: bytes, testnet=False) -> str:
     prefix = b'\xc4' if testnet else b'\x05'
     return encode_base58_checksum(prefix + h160)
+
+
+def bits_to_target(bits: bytes) -> int:
+    exponent = bits[-1]
+    coefficient = little_endian_to_int(bits[:-1])
+    target = coefficient * (256**(exponent - 3))
+    return target
