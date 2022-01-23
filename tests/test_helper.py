@@ -152,6 +152,15 @@ def test_target_bits_target():
 
 @pytest.mark.parametrize('previous_bits, time_diff, expected', [
     (bytes.fromhex('e93c0118'), target.TWOWEEKS, bytes.fromhex('e93c0118')),
+    (bytes.fromhex('00001016'), target.TWOWEEKS, bytes.fromhex('00001016')),
+    (bytes.fromhex('00001016'), target.TWOWEEKS * 4,
+     bytes.fromhex('00004016')),
+    (bytes.fromhex('00001016'), target.TWOWEEKS * 5,
+     bytes.fromhex('00004016')),
+    (bytes.fromhex('00001016'), target.TWOWEEKS // 4,
+     bytes.fromhex('00000416')),
+    (bytes.fromhex('ffff001d'), target.TWOWEEKS * 2,
+     bytes.fromhex('ffff001d')),
 ])
 def test_calculate_new_bits(previous_bits: bytes, time_diff: int,
                             expected: bytes):
