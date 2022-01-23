@@ -1,6 +1,5 @@
 from __future__ import annotations
 
-import json
 from io import BytesIO
 
 from src.helper import (MAX_TARGET, bits_to_target, hash256,
@@ -31,9 +30,9 @@ class Block:
         result = int_to_little_endian(self.version, 4)
         result += self.prev_block[::-1]
         result += self.merkle_root[::-1]
-        result = int_to_little_endian(self.timestamp, 4)
-        result = self.bits
-        result = self.nonce
+        result += int_to_little_endian(self.timestamp, 4)
+        result += self.bits
+        result += self.nonce
         return result
 
     def hash(self) -> bytes:
