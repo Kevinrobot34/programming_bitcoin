@@ -125,3 +125,34 @@ def test_h160_to_p2pkh_address(h160: bytes, testnet: bool, expected: str):
 ])
 def test_h160_to_p2sh_address(h160: bytes, testnet: bool, expected: str):
     assert target.h160_to_p2sh_address(h160, testnet) == expected
+
+
+@pytest.mark.parametrize('bits, expected', [
+    (bytes.fromhex('e93c0118'),
+     0x013c_e900_0000_0000_0000_0000_0000_0000_0000_0000_0000_0000),
+    (bytes.fromhex('ffff001d'), target.MAX_TARGET),
+])
+def test_bits_to_target(bits: bytes, expected: int):
+    assert target.bits_to_target(bits) == expected
+
+
+@pytest.mark.parametrize(
+    't, expected',
+    [(0x013c_e900_0000_0000_0000_0000_0000_0000_0000_0000_0000_0000,
+      bytes.fromhex('e93c0118')),
+     (target.MAX_TARGET, bytes.fromhex('ffff001d'))])
+def test_target_to_bits(t: int, expected: bytes):
+    assert target.target_to_bits(t) == expected
+
+
+def test_target_bits_target():
+    for t in [0x4f_00_00_00, 0x4f_00_00_00_00, 0x4f_00_00_00_00_00]:
+        assert target.bits_to_target(target.target_to_bits(t)) == t
+
+
+@pytest.mark.parametrize('previous_bits, time_diff, expected', [
+    (bytes.fromhex('e93c0118'), target.TWOWEEKS, bytes.fromhex('e93c0118')),
+])
+def test_calculate_new_bits(previous_bits: bytes, time_diff: int,
+                            expected: bytes):
+    assert target.calculate_new_bits(previous_bits, time_diff) == expected
