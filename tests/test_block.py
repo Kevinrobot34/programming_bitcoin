@@ -2,7 +2,6 @@ from io import BytesIO
 
 import pytest
 import src.block as target
-from numpy import block
 
 
 def test_block1():
