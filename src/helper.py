@@ -5,6 +5,8 @@ BASE58_ALPHABET = '123456789ABCDEFGHJKLMNPQRSTUVWXYZabcdefghijkmnopqrstuvwxyz'
 SIGHASH_ALL = 1
 SIGHASH_NONE = 2
 SIGHASH_SINGLE = 3
+MAX_TARGET = 0xffff * 256**(0x1d - 3)
+TWOWEEKS = 14 * 24 * 60 * 60
 
 
 def hash160(s: bytes) -> bytes:
@@ -108,3 +110,27 @@ def bits_to_target(bits: bytes) -> int:
     coefficient = little_endian_to_int(bits[:-1])
     target = coefficient * (256**(exponent - 3))
     return target
+
+
+def target_to_bits(target: int) -> bytes:
+    raw_bytes = target.to_bytes(32, 'big')
+    raw_bytes = raw_bytes.lstrip(b'\x00')
+    if raw_bytes[0] > 0x7f:
+        exponent = len(raw_bytes) + 1
+        coefficient = b'\x00' + raw_bytes[:2]
+    else:
+        exponent = len(raw_bytes)
+        coefficient = raw_bytes[:3]
+    bits = coefficient[::-1] + bytes([exponent])
+    return bits
+
+
+def calculate_new_bits(previous_bits: bytes, time_diff: int) -> bytes:
+    if time_diff > TWOWEEKS * 4:
+        time_diff = TWOWEEKS * 4
+    if time_diff < TWOWEEKS // 4:
+        time_diff = TWOWEEKS // 4
+    new_target = bits_to_target(previous_bits) * time_diff // TWOWEEKS
+    if new_target > MAX_TARGET:
+        new_target = MAX_TARGET
+    return target_to_bits(new_target)

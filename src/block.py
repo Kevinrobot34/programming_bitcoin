@@ -3,8 +3,8 @@ from __future__ import annotations
 import json
 from io import BytesIO
 
-from src.helper import (bits_to_target, hash256, int_to_little_endian,
-                        little_endian_to_int)
+from src.helper import (MAX_TARGET, bits_to_target, hash256,
+                        int_to_little_endian, little_endian_to_int)
 
 
 class Block:
@@ -53,7 +53,7 @@ class Block:
 
     def difficulty(self) -> float:
         target = self.target()
-        diff = 0xffff * (256**(0x1d - 3)) / target
+        diff = MAX_TARGET / target
         return diff
 
     def check_pow(self) -> bool:
