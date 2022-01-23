@@ -138,6 +138,21 @@ class Tx:
         self.tx_ins[input_index].script_sig = Script([sig, sec])
         return self.verify_input(input_index)
 
+    def is_coinbase(self) -> bool:
+        return len(self.tx_ins) == 1 \
+            and self.tx_ins[0].prev_tx == b'\x00' * 32 \
+            and self.tx_ins[0].prev_index == 0xff_ff_ff_ff
+
+    def coinbase_height(self) -> Optional[int]:
+        # if tx is coinbase one, script_sig of input starts with block height
+        if not self.is_coinbase():
+            return None
+        element = self.tx_ins[0].script_sig.cmds[0]
+        if not isinstance(element, bytes):
+            # not following BIP0034
+            return None
+        return little_endian_to_int(element)
+
 
 class TxIn:
     def __init__(self,
