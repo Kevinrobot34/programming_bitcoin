@@ -1,3 +1,4 @@
+![ci](https://github.com/Kevinrobot34/programming_bitcoin/actions/workflows/ci.yml/badge.svg)
 [![Quality Gate Status](https://sonarcloud.io/api/project_badges/measure?project=Kevinrobot34_programming_bitcoin&metric=alert_status)](https://sonarcloud.io/summary/new_code?id=Kevinrobot34_programming_bitcoin) [![Coverage](https://sonarcloud.io/api/project_badges/measure?project=Kevinrobot34_programming_bitcoin&metric=coverage)](https://sonarcloud.io/summary/new_code?id=Kevinrobot34_programming_bitcoin)
 
 # programming_bitcoin
